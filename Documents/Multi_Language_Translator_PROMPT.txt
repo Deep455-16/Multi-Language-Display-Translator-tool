@@ -1,0 +1,341 @@
+===================================================================
+FINAL CONSOLIDATED PROMPT
+Multi-Language Display Translator GUI Tool — Secure Meters Ltd
+===================================================================
+
+Build a complete Python GUI application called
+"Multi-Language Display Translator" for Secure Meters Ltd
+Embedded FW Team. Save as DefStr_Translator.py.
+
+pip dependency: deep-translator
+
+===================================================================
+WHAT IT DOES
+===================================================================
+
+It reads a firmware .h file (encoded in latin-1) that contains
+#pragma DEFSTR and #pragma DEFNSTR string blocks. Each block has:
+  - Line 1: English string with backtick padding e.g. 'Secure Voltage````'
+  - Lines 2+: Translations in various languages   e.g. 'Säker spänning``' // Swedish
+  - Trailing lines: Empty placeholder slots        e.g. '````````````````'
+
+The tool translates all English strings into a user-selected
+language and appends them into the correct position in each block.
+
+===================================================================
+FILE FORMAT DETAILS
+===================================================================
+
+Each block looks like:
+  #pragma DEFSTR  'English string`````'
+  #pragma DEFSTR  'Säker spänning`````'  // Swedish
+  #pragma DEFSTR  'Sichere Spannung```'  // German
+  #pragma DEFSTR  '```````````````````'  ← free trailing slot
+
+String length = fixed width, padded with backticks (`) to fill.
+File encoding: latin-1 always. Never use utf-8.
+
+The file also has a Navigation Strings comment block at the top:
+  /*
+  Navigation Strings
+  Order of languages
+  DEFSTR  'English'
+  DEFSTR  'Swedish'
+  DEFSTR  'German '
+  DEFSTR  'French '
+  DEFSTR  'Spanish'
+  DEFSTR  'Russian'
+  DEFSTR  'Arabic'
+  DEFSTR  'Italian'
+  DEFSTR  'English without Import/Export Text'
+  DEFSTR  'Portuguese'
+  DEFSTR  'Danish'
+  */
+
+This block defines the EXACT ORDER and LIST of languages.
+It changes dynamically — always read it fresh from the file.
+
+===================================================================
+LANGUAGES SUPPORTED (latin-1 safe only)
+===================================================================
+
+Only these 17 languages appear in the GUI dropdown.
+Non-latin1 scripts (Russian, Arabic, Chinese, Hindi, Japanese,
+Korean, Greek, Thai) are EXCLUDED — they produce ???? in .h files.
+
+LANGUAGES = {
+    "Czech": "cs",     "Danish": "da",     "Dutch": "nl",
+    "Finnish": "fi",   "French": "fr",     "German": "de",
+    "Hungarian": "hu", "Indonesian": "id", "Italian": "it",
+    "Norwegian": "no", "Polish": "pl",     "Portuguese": "pt",
+    "Romanian": "ro",  "Spanish": "es",    "Swedish": "sv",
+    "Turkish": "tr",   "Vietnamese": "vi",
+}
+
+===================================================================
+CORE RULES
+===================================================================
+
+RULE 1 — FIRST LINE = ENGLISH
+  Only the FIRST non-placeholder line of each block is the English
+  string. All subsequent lines (even ASCII) are other languages.
+  Do NOT treat Italian/Vietnamese/etc as additional English strings.
+
+RULE 2 — NAVIGATION ORDER for INSERT POSITION
+  When inserting a new language (e.g. Danish) into existing blocks:
+  - Find nav block order: [Swedish, German, French, Spanish, Italian, Portuguese, Danish]
+  - Find Danish's index (6)
+  - Find the last language BEFORE Danish that exists in the block (e.g. Portuguese)
+  - Insert Danish AFTER that Portuguese line
+  - If no preceding language found → insert after English line
+  - NEVER insert in random middle positions
+
+RULE 3 — AUTO FREE SLOTS
+  Before inserting a translation, count trailing placeholder lines.
+  If free_slots == 0:
+    Auto-add 4 empty backtick lines at end of that block first,
+    then insert the translation.
+  If free_slots > 0:
+    Just insert at nav-order position. Do NOT add extra slots.
+
+RULE 4 — SKIP CONDITION
+  Skip a block ONLY if the target language comment already exists
+  (e.g. // Portuguese found in that block).
+  NEVER skip because of missing free slots — auto-add them instead.
+
+RULE 5 — CASE-INSENSITIVE LANGUAGE MATCHING
+  Nav block may have lowercase comments like '// swedish'.
+  Always normalize: raw_comment.strip().title() before LANGUAGES lookup.
+  'swedish' → 'Swedish' → code='sv' ✓
+
+RULE 6 — NO DUPLICATE LANGUAGES in new blocks
+  If same language appears multiple times in a template block
+  (e.g. Portuguese at positions 1, 9, 14), only FIRST occurrence
+  gets a translation line. Rest become plain empty slots.
+
+RULE 7 — ENTRIES TO SKIP in nav block (non-translatable)
+  NAV_SKIP_ENTRIES = {
+    'english',
+    'english without import/export text',
+    'russian',
+    'arabic',
+  }
+  These produce EMPTY backtick slots in new blocks (no comment).
+
+RULE 8 — LATIN-1 SAFETY
+  All written text must have ord(c) <= 255.
+  If translation result has chars > 255, encode with errors='replace'.
+
+===================================================================
+FEATURE 1 — TRANSLATE & APPEND (main feature)
+===================================================================
+
+User selects: Target Language + Input .h File → clicks Translate
+
+For each block in file:
+  1. Check if target language already in block → skip if yes
+  2. Translate English string using Google Translate (deep-translator)
+  3. Check trailing free slots → auto-add 4 if zero
+  4. Insert translation at nav-order position with // LangName comment
+  5. Pad/trim to exact str_len with backticks
+
+After all insertions:
+  - Update Navigation Strings comment block: add new language if not listed
+  - Save output as: filename_Language.h
+  - Save backup as: filename.h.bak
+
+Use parallel translation: ThreadPoolExecutor(max_workers=10)
+Use queue.Queue for GUI updates (never freeze the GUI).
+All insertions applied in REVERSE line order to keep indices stable.
+
+===================================================================
+FEATURE 2 — PREFIX-AWARE TRANSLATION
+===================================================================
+
+Strings like 'LLS:Low Level Security' confuse Google Translate.
+Pattern: UPPERCASE_PREFIX:Body text
+
+Detect these patterns and translate ONLY the body:
+  re.compile(r'^([A-Z0-9]{1,8}:)(.+)$')   → 'LLS:' + translate('Low Level Security')
+  re.compile(r'^(L[123N]\s+)(.+)$')        → 'L1 ' + translate('Active Import')
+  re.compile(r'^([A-Z][a-z]{0,3}\.\s*)([A-Z].+)$') → 'Ph. ' + translate('Angle')
+
+===================================================================
+FEATURE 3 — ENGLISH STRING (optional field)
+===================================================================
+
+User can optionally type an English string in the input field.
+
+Case A — String NOT found in file (NEW STRING):
+  - Show popup: "Enter string length (e.g. 22, 25, 30)"
+  - Build a complete new block using Navigation Strings order:
+      Line 1: English string (padded to str_length)
+      Lines 2+: ALL translatable languages from nav block in order
+                (skip: English, Russian, Arabic, English without...)
+      Last 4: Empty trailing slots (AUTO_FREE_SLOTS = 4)
+  - Insert new block AFTER the last existing translated block in file
+    (not at file end — before any compiler check sections)
+  - Save as: filename_NewString.h
+
+Case B — String EXISTS in file:
+  - Translate it for selected language
+  - Find nav-order insert position in the matching block
+  - Add translation there
+  - If already added → popup "Already Added — no changes made"
+  - Save as: filename_Language.h
+
+===================================================================
+FEATURE 4 — STOP BUTTON
+===================================================================
+
+Red STOP button appears during translation.
+Clicking it sets a threading.Event stop flag.
+Already-translated strings ARE saved to partial output file.
+Partial output saved as: filename_Language_partial.h
+After stop: popup shows "Translated so far: N — Run again to complete"
+
+===================================================================
+POPUPS / MESSAGES
+===================================================================
+
+1. Already Translated:
+   "'Portuguese' translation already exists in this file.
+    Blocks already translated: 482
+    No changes were made."
+
+2. Already Added (extra string):
+   "This extra string already exists in the file.
+    English: 'Low Level Security'
+    Translated: 'Segurança de Baixo Nível'
+    No changes were made."
+
+3. Stopped:
+   "Translation stopped by user.
+    Translated so far: 245
+    Partial output: filename_Portuguese_partial.h"
+
+4. Done (normal completion):
+   "Translation complete!
+    Total: 682  Done: 680
+    Output: filename_Portuguese.h"
+
+5. New String Added:
+   "New string block added!
+    English: 'Secure Voltage'
+    Length: 30
+    Languages: 7 translated  +  4 free slots"
+
+NO "No Free Slots" popup — auto-handled silently.
+
+===================================================================
+GUI DESIGN
+===================================================================
+
+Dark theme: bg="#1e1e2e", fg="#cdd6f4", accent="#89b4fa"
+Title: "Multi-Language Display Translator — Secure Meters Ltd."
+Subtitle: "Secure Meters Ltd  |  Embedded FW Team"
+
+Input panel (LabelFrame "Inputs"):
+  Row 0: Target Language *    [Combobox — sorted LANGUAGES keys]
+  Row 1: Input .h File *      [Entry + Browse... button]
+  Row 2: English String       [Entry — optional]
+  Row 3: Hint label (small gray text explaining the field behavior)
+
+Progress bar (ttk.Progressbar)
+Status label (green text)
+
+Buttons row:
+  [⚡ Translate & Append]   [⛔ Stop]  (Stop is red, disabled when idle)
+
+Output Log (ScrolledText):
+  Colors: ok=green, err=red, info=cyan, warn=yellow
+  Font: Consolas 9
+
+Button states:
+  Idle:    Translate=enabled,  Stop=disabled
+  Running: Translate=disabled, Stop=enabled (red)
+  Done:    Translate=enabled,  Stop=disabled
+
+===================================================================
+STATS SHOWN IN LOG AFTER COMPLETION
+===================================================================
+
+Total blocks found: N  (DEFSTR: X  DEFNSTR: Y)
+Already translated: N  → skipped
+Need translation  : N
+  ✓ [DEFSTR] 'English string'  →  'translated string'
+  ✓ [DEFSTR] 'Another string'  →  'another'  [+4 slots]  ← if auto-slots added
+Auto free slots: added to N block(s)
+Nav comment: updated ✓
+Output: filename_Portuguese.h
+Backup: filename.h.bak
+
+===================================================================
+TECHNICAL ARCHITECTURE
+===================================================================
+
+Constants:
+  BACKTICK = '`'
+  MAX_WORKERS = 10
+  AUTO_FREE_SLOTS = 4
+  NAV_SKIP_ENTRIES = {'english', 'english without import/export text', 'russian', 'arabic'}
+
+Key functions:
+  parse_nav_languages(lines_text)     → ordered list from nav comment block
+  get_nav_order(lines_text)           → list of translatable lang names in order
+  find_all_blocks(lines)              → all DEFSTR/DEFNSTR blocks with metadata
+  block_needs_translation(group, lang_name, lines_text) → skip only if lang present
+  get_nav_insert_position(block, lang_name, lines_text, nav_order) → correct line index
+  count_trailing_free_slots(group)    → count trailing placeholders
+  update_nav_comment_block(lines, lang_name, eol) → add lang to nav block if missing
+  add_new_string_block(...)           → builds+inserts new complete block
+  process_file(...)                   → main translate+append for existing blocks
+  translate_parallel(...)             → ThreadPoolExecutor with stop_event support
+  _do_translate(text, lang_code)      → prefix-aware Google Translate call
+  english_string_exists_in_file(...)  → check if new_english is already in file
+
+Threading:
+  Worker thread + queue.Queue for all GUI updates
+  root.after(50, poll_queue) for queue polling
+  threading.Event for stop signal
+
+File I/O:
+  Read: latin-1 encoding
+  Write: latin-1 encoding, errors='replace'
+  EOL: detect '\r\n' vs '\n' from original file
+  Backup: shutil.copy2 before any modification
+
+===================================================================
+COMPLETE BEHAVIOR SUMMARY (test cases)
+===================================================================
+
+TEST 1 — Normal translate:
+  Input: original.h + select Danish
+  Result: original_Danish.h with Danish added to ALL blocks
+          in correct nav position (after Portuguese, before trailing slots)
+
+TEST 2 — Block with no free slots:
+  Input: file where some blocks are full (no trailing placeholders)
+  Result: 4 empty slots auto-added at end of those blocks,
+          then Danish inserted. Log shows "[+4 slots]" for those blocks.
+
+TEST 3 — Already translated:
+  Input: original_Danish.h + select Danish again
+  Result: popup "Already Translated — 682 blocks. No changes."
+
+TEST 4 — New string:
+  Input: any .h file + type "Secure Voltage" in English String field
+  → "Secure Voltage" not found in file
+  → popup asks length (e.g. 30)
+  → new block built with ALL nav languages translated
+  → 4 free trailing slots added
+  → inserted AFTER last translated block (not at file end)
+  Result: filename_NewString.h
+
+TEST 5 — Stop mid-way:
+  User clicks Stop during translation
+  Result: partial file saved, popup shows count translated so far
+
+===================================================================
+END OF PROMPT
+===================================================================
