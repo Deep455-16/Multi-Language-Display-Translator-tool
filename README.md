@@ -4,7 +4,7 @@
 
 **Multi-Language Display Translator** is a Python-based desktop GUI application designed to automate the translation and insertion of display strings in **embedded firmware `.h` files**.
 
-Built for the **Secure Meters Ltd. Embedded Firmware workflow**, the tool understands the structure of `#pragma DEFSTR` and `#pragma DEFNSTR` string blocks and intelligently inserts translations while preserving **language ordering, fixed string lengths, formatting, and firmware compatibility**.
+Built for embedded firmware localization workflows, the tool understands the structure of `#pragma DEFSTR` and `#pragma DEFNSTR` string blocks and intelligently inserts translations while preserving **language ordering, fixed string lengths, formatting, and firmware compatibility**.
 
 > ⚡ Translate hundreds of embedded display strings without manually editing firmware files.
 
@@ -32,7 +32,7 @@ Built for the **Secure Meters Ltd. Embedded Firmware workflow**, the tool unders
 
 ---
 
-# 🖥️ Application Overview
+## 🖥️ Application Overview
 
 The application provides a simple workflow:
 
@@ -44,7 +44,7 @@ Select Firmware .h File
        │
        ▼
 ┌──────────────────────────┐
-│ Translate & Append        │
+│ Translate & Append       │
 └────────────┬─────────────┘
              │
              ▼
@@ -55,9 +55,6 @@ Select Firmware .h File
              │
              ▼
        Extract English
-             │
-             ▼
-     Check Existing Language
              │
         ┌────┴────┐
         │ Exists? │
@@ -85,7 +82,7 @@ Select Firmware .h File
 
 ---
 
-# 🧠 How It Works
+## 🧠 How It Works
 
 The tool understands firmware files containing blocks such as:
 
@@ -93,7 +90,7 @@ The tool understands firmware files containing blocks such as:
 #pragma DEFSTR  'Secure Voltage````'
 #pragma DEFSTR  'Säker spänning``'  // Swedish
 #pragma DEFSTR  'Sichere Spannung``'  // German
-#pragma DEFSTR  '````````````````' 
+#pragma DEFSTR  '````````````````'
 `````````````````
 
 The application identifies:
@@ -109,7 +106,7 @@ It then generates the translated entry without disturbing the rest of the firmwa
 
 ---
 
-# 🧭 Intelligent Language Ordering
+## 🧭 Intelligent Language Ordering
 
 The translator does **not** blindly append translations to the end of a block.
 
@@ -132,8 +129,6 @@ DEFSTR  'Danish'
 
 If the selected language is `Danish`, the tool determines where Danish belongs based on the navigation order.
 
-For example:
-
 ```text
 English
 Swedish
@@ -145,40 +140,24 @@ Portuguese
 Danish   ← inserted here
 ```
 
-This keeps the generated firmware file consistent with the project's existing language structure.
+This keeps the generated firmware file consistent with the existing language structure.
 
 ---
 
-# 🌍 Supported Languages
+## 🌍 Supported Languages
 
-The application currently supports translation into languages including:
+The application currently supports languages including:
 
-🇨🇿 Czech
-🇩🇰 Danish
-🇳🇱 Dutch
-🇫🇮 Finnish
-🇫🇷 French
-🇩🇪 German
-🇭🇺 Hungarian
-🇮🇩 Indonesian
-🇮🇹 Italian
-🇳🇴 Norwegian
-🇵🇱 Polish
-🇵🇹 Portuguese
-🇷🇴 Romanian
-🇷🇺 Russian
-🇪🇸 Spanish
-🇸🇪 Swedish
-🇹🇷 Turkish
-🇻🇳 Vietnamese
-🇸🇦 Arabic
-🇮🇳 Hindi
+🇨🇿 Czech · 🇩🇰 Danish · 🇳🇱 Dutch · 🇫🇮 Finnish · 🇫🇷 French
+🇩🇪 German · 🇭🇺 Hungarian · 🇮🇩 Indonesian · 🇮🇹 Italian · 🇳🇴 Norwegian
+🇵🇱 Polish · 🇵🇹 Portuguese · 🇷🇴 Romanian · 🇷🇺 Russian · 🇪🇸 Spanish
+🇸🇪 Swedish · 🇹🇷 Turkish · 🇻🇳 Vietnamese · 🇸🇦 Arabic · 🇮🇳 Hindi
 
 > **Note:** Actual language availability and encoding behavior depend on the firmware's character-set requirements and configured translation provider.
 
 ---
 
-# 🔄 Multi-Tier Translation Engine
+## 🔄 Multi-Tier Translation Engine
 
 The translator uses a fallback architecture to improve reliability.
 
@@ -205,7 +184,7 @@ The translator uses a fallback architecture to improve reliability.
                 └────────────────┘
 ```
 
-### Translation providers
+### Translation Providers
 
 **Tier 1 — DeepL**
 
@@ -223,7 +202,7 @@ The application also implements request throttling and retry mechanisms to reduc
 
 ---
 
-# 🧩 Prefix-Aware Translation
+## 🧩 Prefix-Aware Translation
 
 Firmware strings often contain technical prefixes that should not be translated.
 
@@ -233,7 +212,7 @@ For example:
 LLS:Low Level Security
 ```
 
-Instead of translating the entire string, the application separates:
+The application separates:
 
 ```text
 Prefix: LLS:
@@ -257,11 +236,11 @@ LN ...
 Ph. ...
 ```
 
-This helps preserve firmware-specific terminology and identifiers.
+This helps preserve firmware-specific identifiers and terminology.
 
 ---
 
-# 📏 Fixed-Length Firmware Strings
+## 📏 Fixed-Length Firmware Strings
 
 Embedded firmware frequently requires strings to occupy a predetermined number of characters.
 
@@ -277,11 +256,11 @@ The application automatically calculates the required length and pads the transl
 Sichere Spannung```
 ````
 
-This prevents translated strings from breaking the expected firmware structure.
+This helps prevent translated strings from breaking the expected firmware structure.
 
 ---
 
-# 🆕 Add New Firmware Strings
+## 🆕 Add New Firmware Strings
 
 The tool can also add a completely new English string.
 
@@ -305,7 +284,6 @@ Conceptually:
 #pragma DEFSTR  'German Translation``'   // German
 #pragma DEFSTR  'French Translation``'   // French
 ...
-#pragma DEFSTR  '````````````````````' 
 #pragma DEFSTR  '````````````````````'
 #pragma DEFSTR  '````````````````````'
 #pragma DEFSTR  '````````````````````'
@@ -315,7 +293,7 @@ This eliminates the need to manually construct multilingual firmware blocks.
 
 ---
 
-# 🛡️ Automatic Free-Slot Management
+## 🛡️ Automatic Free-Slot Management
 
 Every string block can contain empty placeholder slots:
 
@@ -325,11 +303,11 @@ Every string block can contain empty placeholder slots:
 
 The translator automatically counts these slots.
 
-### If slots are available
+**If slots are available**
 
 The translation is inserted normally.
 
-### If no slots are available
+**If no slots are available**
 
 The application automatically creates additional slots:
 
@@ -337,7 +315,7 @@ The application automatically creates additional slots:
 No free slots
       │
       ▼
-Add 4 empty slots
+Add empty slots
       │
       ▼
 Insert translation
@@ -347,7 +325,7 @@ There is no need for manual intervention.
 
 ---
 
-# ⛔ Safe Translation Stop
+## ⛔ Safe Translation Stop
 
 Large firmware files can contain hundreds of strings.
 
@@ -366,11 +344,9 @@ filename_Portuguese_partial.h
 
 Already processed translations are preserved instead of being discarded.
 
-The translation can then be run again to complete the remaining entries.
-
 ---
 
-# 💾 Automatic Backup
+## 💾 Automatic Backup
 
 Before modifying the input firmware file, the application creates:
 
@@ -390,20 +366,20 @@ Interrupted operations produce:
 filename_Portuguese_partial.h
 ```
 
-This provides a safer workflow for modifying production firmware resources.
+This provides a safer workflow for modifying firmware resources.
 
 ---
 
-# 🖥️ GUI
+## 🖥️ GUI
 
 The application uses a dark-themed Tkinter interface.
 
-### Main controls
+### Main Controls
 
 ```text
 ┌─────────────────────────────────────────────────────┐
 │ Multi-Language Display Translator                   │
-│ Secure Meters Ltd | Embedded FW Team               │
+│ Embedded Firmware Localization Tool                │
 ├─────────────────────────────────────────────────────┤
 │                                                     │
 │ Target Language   [ Portuguese              ▼ ]     │
@@ -422,8 +398,8 @@ The application uses a dark-themed Tkinter interface.
 │ │ Total blocks found: 682                         │ │
 │ │ Already translated: 120                         │ │
 │ │ Need translation: 562                           │ │
-│ │ ✓ [DEFSTR] Secure Voltage → Tension sécurisée   │ │
-│ │ ✓ [DEFSTR] Current → Courant                    │ │
+│ │ ✓ Secure Voltage → Tension sécurisée            │ │
+│ │ ✓ Current → Courant                             │ │
 │ └─────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────┘
 ```
@@ -440,7 +416,7 @@ The interface provides:
 
 ---
 
-# ⚙️ Technical Architecture
+## ⚙️ Technical Architecture
 
 ```text
                     ┌─────────────────────┐
@@ -469,7 +445,7 @@ The interface provides:
                Output .h File
 ```
 
-### Core components
+### Core Components
 
 | Component            | Purpose                               |
 | -------------------- | ------------------------------------- |
@@ -487,7 +463,7 @@ The interface provides:
 
 ---
 
-# 📁 Project Structure
+## 📁 Project Structure
 
 ```text
 Multi-Language-Display-Translator-tool/
@@ -519,16 +495,16 @@ Multi-Language-Display-Translator-tool/
 
 ---
 
-# 🚀 Installation
+## 🚀 Installation
 
-## 1. Clone the repository
+### 1. Clone the Repository
 
 ```bash
 git clone <your-repository-url>
 cd Multi-Language-Display-Translator-tool
 ```
 
-## 2. Install Python
+### 2. Install Python
 
 Python **3.9+** is recommended.
 
@@ -544,15 +520,13 @@ or:
 py --version
 ```
 
-## 3. Install dependencies
-
-The primary Python dependency is:
+### 3. Install Dependencies
 
 ```bash
 pip install deep-translator
 ```
 
-For the optional DeepL integration:
+For optional DeepL integration:
 
 ```bash
 pip install deepl
@@ -560,7 +534,7 @@ pip install deepl
 
 ---
 
-# ▶️ Run the Application
+## ▶️ Run the Application
 
 Navigate to the source directory:
 
@@ -578,9 +552,9 @@ The GUI should launch automatically.
 
 ---
 
-# 📦 Run the Windows Executable
+## 📦 Run the Windows Executable
 
-A pre-built executable is included in:
+A pre-built executable is available in:
 
 ```text
 Source_Code/dist/Multi_Language_Translator.exe
@@ -590,7 +564,7 @@ You can launch the application directly on Windows without running the Python so
 
 ---
 
-# 🔐 DeepL Configuration
+## 🔐 DeepL Configuration
 
 DeepL can be configured as the preferred translation provider.
 
@@ -600,7 +574,7 @@ The application stores its local configuration in:
 ~/.defstr_translator_config.json
 ```
 
-The configuration can contain:
+Example:
 
 ```json
 {
@@ -615,9 +589,9 @@ If a DeepL API key is not configured, the application falls back to Google Trans
 
 ---
 
-# 📊 Translation Workflow
+## 📊 Translation Workflow
 
-### Existing firmware file
+### Existing Firmware File
 
 ```text
 1. Select target language
@@ -645,7 +619,7 @@ If a DeepL API key is not configured, the application falls back to Google Trans
 12. Generate translated .h file
 ```
 
-### New string
+### New String
 
 ```text
 English string
@@ -669,7 +643,7 @@ Save *_NewString.h
 
 ---
 
-# 📈 Example Completion Log
+## 📈 Example Completion Log
 
 A successful translation may produce output similar to:
 
@@ -700,7 +674,7 @@ Backup: firmware.h.bak
 
 ---
 
-# 🧪 Error Handling & Reliability
+## 🧪 Error Handling & Reliability
 
 The application includes several mechanisms to improve reliability during large translation jobs:
 
@@ -719,7 +693,7 @@ The application includes several mechanisms to improve reliability during large 
 
 ---
 
-# 🎯 Use Cases
+## 🎯 Use Cases
 
 This tool is particularly useful for:
 
@@ -736,9 +710,7 @@ Instead of manually editing hundreds of language entries, developers can automat
 
 ---
 
-# 🔧 Future Improvements
-
-Potential future enhancements include:
+## 🔧 Future Improvements
 
 * [ ] Offline translation models
 * [ ] Translation memory/cache
@@ -756,7 +728,7 @@ Potential future enhancements include:
 
 ---
 
-# 👨‍💻 Development
+## 👨‍💻 Development
 
 The application is written primarily in:
 
@@ -780,7 +752,7 @@ The generated executable will be placed in the `dist/` directory.
 
 ---
 
-# ⚠️ Important Notes
+## ⚠️ Important Notes
 
 ### Firmware Encoding
 
@@ -803,7 +775,7 @@ Google Translate, DeepL, and MyMemory are external translation services. Their a
 
 ---
 
-# 🏢 Developed For
+## 🏢 Developed For
 
 **Secure Meters Ltd.**
 **Embedded Firmware Team**
@@ -812,15 +784,15 @@ Designed to simplify and automate multilingual firmware display-string localizat
 
 ---
 
-# 📜 License
+## 📜 License
 
-Add your project's license here, for example:
+Add your project's applicable license here.
+
+For example:
 
 ```text
 MIT License
 ```
-
-or specify the organization's applicable internal/proprietary license.
 
 ---
 
@@ -833,10 +805,10 @@ Firmware localization is often repetitive, error-prone, and difficult to maintai
 ```text
 Manual Localization
         │
-        │  hundreds of strings
-        │  manual ordering
-        │  manual padding
-        │  manual insertion
+        │  Hundreds of strings
+        │  Manual ordering
+        │  Manual padding
+        │  Manual insertion
         ▼
    ❌ Time-consuming
    ❌ Error-prone
